@@ -57,7 +57,7 @@ export default class Tunnel extends EventEmitter {
       const line: string = data.toString().trim();
       const lineMatch: RegExpMatchArray | null = line.match(TEMPORARY_CLOUDFLARE_URL);
       
-      if (lineMatch && lineMatch.length) {
+      if (lineMatch && lineMatch.length > 1) {
         if (this._debug) {
           console.log(`Match: ${lineMatch[1]}`);
         }
