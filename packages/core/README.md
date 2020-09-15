@@ -12,14 +12,20 @@ const {
 (async () => {
   // Initialize store
   const store = createStore();
+  // Listen for events
+  store.once('connected', (connectedEvent) => console.log(`Live tunnel (${connectedEvent.id}) url: ${connectedEvent.publicURL}`));
+  store.once('disconnected', (disconnectedEvent) => console.log(`Tunnel (${disconnectedEvent.id}) disconnected`));
+  store.once('expired', (expiredEvent) => console.log(`Tunnel (${expiredEvent.id}) has expired`));
+  store.once('timeout', (timeoutEvent) => console.log(`Timeout occured for tunnel (${timeoutEvent.id})`));
+  store.on('error', (err) => console.error(err));
   // Tunnel identifier - Use tunnel id for other actions
   let tunnelId;
   try {
     // Creates a new tunnel
     tunnelId = await store.createTunnel(Object.freeze({
-      name: 'my-first-live-tunnel', // tunnel name, only certain characters allowed ([A-Za-z-])
-      originHost: 'localhost', // host on local network
-      originPort: 3000 // port of running web service
+      name: 'my-first-live-tunnel', // required: tunnel name, only certain characters allowed ([A-Za-z-])
+      originURL: 'http://localhost:3000', // required: address to web server on local network
+      expiration: 60 * 60 * 1000 // optional: expiration time to shutdown tunnel 
     }));
   } catch (err) {
     // Tunnel could fail if origin is not running

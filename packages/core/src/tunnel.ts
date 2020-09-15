@@ -6,8 +6,14 @@ import { nanoid } from 'nanoid';
 import {
   TunnelState,
   TunnelRouteIdentifier,
+  URL,
   CLOUDFLARED_PATH,
-  TEMPORARY_CLOUDFLARE_URL
+  TEMPORARY_CLOUDFLARE_URL,
+  READY_EVENT,
+  FINISH_EVENT,
+  CLOSE_EVENT,
+  EXIT_EVENT,
+  DATA_EVENT
 } from './constants';
 
 export default class Tunnel extends EventEmitter {
@@ -17,7 +23,7 @@ export default class Tunnel extends EventEmitter {
   private _debug: boolean;
   private _state: TunnelState;
 
-  constructor (name: string, address: string, debug = false) {
+  constructor (name: string, address: URL, debug = false) {
     super();
 
     this._rid = `${name}_${nanoid()}`;
@@ -44,7 +50,7 @@ export default class Tunnel extends EventEmitter {
       throw new Error('cleanup: No tunnel process exists');
     }
     this._state = TunnelState.DISABLED;
-    this.emit('finish');
+    this.emit(FINISH_EVENT);
     this._tunnelProcess.removeAllListeners();
     this.removeAllListeners();
   }
@@ -53,25 +59,27 @@ export default class Tunnel extends EventEmitter {
     if (!this._tunnelProcess || !this._tunnelProcess.stderr) {
       throw new Error('setupHandlers: No tunnel process exists');
     }
-    this._tunnelProcess.stderr.on('data', (data: Buffer) => {
+    this._tunnelProcess.stderr.on(DATA_EVENT, (data: Buffer) => {
       const line: string = data.toString().trim();
       const lineMatch: RegExpMatchArray | null = line.match(TEMPORARY_CLOUDFLARE_URL);
       
       if (lineMatch && lineMatch.length > 1) {
+        const publicURL: URL = lineMatch[1];
         if (this._debug) {
-          console.log(`Match: ${lineMatch[1]}`);
+          console.log(`Match: ${publicURL}`);
         }
+        // Change state and emit ready
         this._state = TunnelState.ACTIVE;
-        this.emit('ready', lineMatch[1]);
+        this.emit(READY_EVENT, publicURL);
       }
       if (this._debug) {
         console.log(line);
       }
     });
     // Setup cleanup handlers
-    this._tunnelProcess.on('error', (err: Error) => console.error(err)); // TODO: bubble upstream?
-    this._tunnelProcess.once('close', () => this._cleanup.bind(this));
-    this._tunnelProcess.once('exit', () => this._cleanup.bind(this));
+    this._tunnelProcess.on('error', (err: Error) => this.emit('error', err));
+    this._tunnelProcess.once(CLOSE_EVENT, () => this._cleanup.bind(this));
+    this._tunnelProcess.once(EXIT_EVENT, () => this._cleanup.bind(this));
   }
 
   private _open (): void {
@@ -88,10 +96,8 @@ export default class Tunnel extends EventEmitter {
     if (!this._tunnelProcess) {
       throw new Error('destroy: No child process found');
     }
-    console.log('killing process');
     this._tunnelProcess.kill('SIGKILL');
     this._tunnelProcess.unref();
-    console.log('process killed');
   }
 
   public static create (name: string, address: string, debug = false): Tunnel {    

@@ -1,28 +1,46 @@
+import { EventEmitter } from 'events';
 import Tunnel from './tunnel';
 import Router from './router';
-import { UpstreamHealthTask } from './task';
+import { 
+  UpstreamHealthCheckTask,
+  ScheduledCancellationTask
+} from './task';
 import {
   URL,
   TunnelRouteConfiguration,
   TunnelState,
   TunnelRouteConfigurationRequest,
   TunnelRouteIdentifier,
-  VALID_TUNNEL_NAME
+  TunnelConnectedEvent,
+  TunnelDisconnectedEvent,
+  TunnelErrorEvent,
+  UpstreamTimeoutEvent,
+  ExpiredEvent,
+  VALID_TUNNEL_NAME,
+  CONNECTED_EVENT,
+  READY_EVENT,
+  DISCONNECTED_EVENT,
+  FINISH_EVENT,
+  TIMEOUT_EVENT,
+  EXPIRED_EVENT
 } from './constants';
 
-export class TunnelStore {
+export class TunnelStore extends EventEmitter {
   private _router: Router;
   private _liveTunnels: Map<URL, Tunnel>;
 
   constructor () {
+    super();
+    
     this._router = new Router();
     this._liveTunnels = new Map<URL, Tunnel>();
   }
   // Connects tunnel specific events with store
-  private _setupListeners (tunnel: Tunnel): void {
-    const healthCheck: UpstreamHealthTask = new UpstreamHealthTask(tunnel.address);
+  private _setupListeners (tunnel: Tunnel, expiration: number): void {
+    let cancellationTask: ScheduledCancellationTask | null;
+    let healthCheck: UpstreamHealthCheckTask | null;
     // Listen for ready event
-    tunnel.once('ready', async (publicURL: URL) => {
+    tunnel.once(READY_EVENT, async (publicURL: URL) => {
       const config: TunnelRouteConfiguration = Object.freeze({
         id: tunnel.id,
         active: tunnel.currentState === TunnelState.ACTIVE,
@@ -33,11 +51,54 @@ export class TunnelStore {
       this._liveTunnels.set(tunnel.id, tunnel);
       // Set temporary records
       await this._router.addRoute(config);
+      // Start cancellation task if expiration set
+      if (expiration && expiration > 0) {
+        cancellationTask = new ScheduledCancellationTask(expiration);
+        cancellationTask.once(EXPIRED_EVENT, async () => {
+          // Emit cancellation
+          const expiredEvent: ExpiredEvent = Object.freeze({
+            id: tunnel.id
+          });
+          this.emit(EXPIRED_EVENT, expiredEvent);
+          // If cancelled fired, shutdown tunnel
+          await this.shutdownTunnel(tunnel.id); 
+        });
+        cancellationTask.start();
+      }
+      // Start health check task
+      healthCheck = new UpstreamHealthCheckTask(tunnel.address);
+      // Check for timeouts
+      healthCheck.once(TIMEOUT_EVENT, async () => {
+        // Pass along timeout to client
+        const timeoutEvent: UpstreamTimeoutEvent = Object.freeze({
+          id: tunnel.id
+        });
+        this.emit(TIMEOUT_EVENT, timeoutEvent);
+        await this.shutdownTunnel(tunnel.id);
+      });
+      healthCheck.start();
+      // Emit tunnel connected event
+      const connectedEvent: TunnelConnectedEvent = Object.freeze({
+        id: tunnel.id,
+        publicURL
+      });
+      this.emit(CONNECTED_EVENT, connectedEvent);
     });
     // Listen for finish event
-    tunnel.once('finish', () => {
-      // Stop health monitor
-      healthCheck.stop();
+    tunnel.once(FINISH_EVENT, () => {
+      // Emit disconnected event
+      const disconnectedEvent: TunnelDisconnectedEvent = Object.freeze({
+        id: tunnel.id
+      });
+      this.emit(DISCONNECTED_EVENT, disconnectedEvent);
+      // Stop cancellation task
+      if (cancellationTask && cancellationTask instanceof ScheduledCancellationTask) {
+        cancellationTask.stop();
+      }
+      // Stop health check task
+      if (healthCheck && healthCheck instanceof UpstreamHealthCheckTask) {
+        healthCheck.stop();
+      }
       // Delete and cleanup
       if (this._liveTunnels.has(tunnel.id)) {
         const liveTunnel: Tunnel | undefined = this._liveTunnels.get(tunnel.id);
@@ -46,32 +107,31 @@ export class TunnelStore {
         }
       }
     });
-    // Listen for timeouts upstream
-    healthCheck.once('timeout', async () => await this.shutdownTunnel(tunnel.id));
-    // Start health check interval
-    healthCheck.start();
-  }
-  // Reinitializes existing tunnels
-  public regenerate (): void {
-    throw new Error('reinitializeTunnels: Method not implemented');
+    tunnel.on('error', (error: Error) => {
+      // Pass along errors to client
+      const errorEvent: TunnelErrorEvent = Object.freeze({
+        id: tunnel.id,
+        error
+      });
+      this.emit('error', errorEvent);
+    });
   }
   // Creates a new tunnel instance
   public async createTunnel (request: TunnelRouteConfigurationRequest): Promise<TunnelRouteIdentifier> {
-    const originURL: URL = `${request.originHost}:${request.originPort}`;
     // Check service is healthy
-    const isActive: boolean = await UpstreamHealthTask.checkAvailable(originURL);
+    const isActive: boolean = await UpstreamHealthCheckTask.checkAvailable(request.originURL);
     if (!isActive) {
-      throw new Error(`createTunnel: ${originURL} is not online`);
+      throw new Error(`createTunnel: ${request.originURL} is not online`);
     }
     // Check valid name
     if (!request.name.length || !VALID_TUNNEL_NAME.test(request.name)) {
       throw new Error(`createTunnel: Name (${name}) is invalid`);
     }
     // Begin tunnel creation
-    const tunnel: Tunnel = Tunnel.create(request.name, originURL);
+    const tunnel: Tunnel = Tunnel.create(request.name, request.originURL);
     const trId: TunnelRouteIdentifier = tunnel.id;
     // Setup listeners
-    this._setupListeners(tunnel);
+    this._setupListeners(tunnel, request.expiration || 0);
     // Return identifier
     return trId;
   }
@@ -121,6 +181,8 @@ export class TunnelStore {
     }
     // Destroy associated router
     await this._router.destroy();
+    // Remove listeners
+    this.removeAllListeners();
   }
 }
 
