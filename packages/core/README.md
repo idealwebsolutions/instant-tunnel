@@ -1,6 +1,9 @@
 # core
 Utilities to build and manage cloudflared argo tunnels
 
+## Pre-requisites
+`cloudflared` must be in `PATH` or defined as an env variable `CLOUDFLARED_PATH` prior to usage. Download [here](https://developers.cloudflare.com/argo-tunnel/downloads).
+
 ## Usage
 
 ```js
