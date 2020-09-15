@@ -1,4 +1,4 @@
-const NAMESPACE: string = process.env.NAMESPACE || 'ondemand-tunnel';
+const NAMESPACE: string = process.env.NAMESPACE || 'instant-tunnel';
 
 export type URL = string;
 export type TunnelRouteIdentifier = string;
