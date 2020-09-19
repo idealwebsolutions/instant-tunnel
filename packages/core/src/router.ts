@@ -23,8 +23,8 @@ export default class Router {
   public async getRoutes (): Promise<Array<TunnelRouteConfiguration>> {
     const tunnels: Array<string> = await this._ds.smembers(TUNNEL_LIST_KEY);
     const tunnelRecords: Array<TunnelRouteConfiguration> = await Promise.all(tunnels.map(async (tunnelId: string) => {
-      const publicURL: URL | null = await this._ds.hget(tunnelId, PUBLIC_URL_FIELD);
-      const originURL: URL | null = await this._ds.hget(tunnelId, ORIGIN_URL_FIELD);
+      const publicURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${tunnelId}`, PUBLIC_URL_FIELD);
+      const originURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${tunnelId}`, ORIGIN_URL_FIELD);
       
       if (!originURL) {
         throw new Error(`Missing origin url for tunnel configuration`);
