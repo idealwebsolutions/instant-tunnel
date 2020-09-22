@@ -20,6 +20,30 @@ export default class Router {
     });
   }
 
+  private async _cleanup () {
+    // Check remaining members in set
+    const numInSet: number = await this._ds.scard(TUNNEL_LIST_KEY);
+
+    if (numInSet === 0) {
+      return;
+    }
+
+    // Query remaining members
+    const tunnelIds: Array<TunnelRouteIdentifier> = await this._ds.smembers(TUNNEL_LIST_KEY);
+
+    // Iterate through all keys and remove entries
+    for (const tunnelId of tunnelIds) {
+      await this.removeRoute(tunnelId);
+    }
+
+    // Remove set key
+    const keyNumRemoved: number = await this._ds.del(TUNNEL_LIST_KEY);
+
+    if (keyNumRemoved === 0) {
+      throw new Error('cleanup: Unable to remove key to set');
+    }
+  }
+
   public async getRoutes (): Promise<Array<TunnelRouteConfiguration>> {
     const tunnels: Array<string> = await this._ds.smembers(TUNNEL_LIST_KEY);
     const tunnelRecords: Array<TunnelRouteConfiguration> = await Promise.all(tunnels.map(async (tunnelId: string) => {
@@ -89,6 +113,7 @@ export default class Router {
   }
 
   public async destroy (): Promise<void> {
+    await this._cleanup();
     await this._ds.quit();
   }
 }

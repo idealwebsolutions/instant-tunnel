@@ -136,7 +136,7 @@ export class TunnelStore extends EventEmitter {
     return trId;
   }
   // Shuts down a single tunnel instance
-  public async shutdownTunnel (tunnelId: string): Promise<void> {
+  public async shutdownTunnel (tunnelId: TunnelRouteIdentifier): Promise<void> {
     if (this._liveTunnels.has(tunnelId)) {
       // Removes record on request
       await this._router.removeRoute(tunnelId);
@@ -149,7 +149,7 @@ export class TunnelStore extends EventEmitter {
     }
   }
   // Returns current status of tunnel
-  public async getTunnelStatus (tunnelId: string): Promise<TunnelState> {
+  public async getTunnelStatus (tunnelId: TunnelRouteIdentifier): Promise<TunnelState> {
     if (!this._liveTunnels.has(tunnelId)) {
       throw new Error('getTunnelStatus: No tunnel exists');
     }
@@ -173,8 +173,8 @@ export class TunnelStore extends EventEmitter {
   }
   // Destroys entire store
   public async destroy (): Promise<void> {
-    const tunnelIterator: Iterator<string> = this._liveTunnels.keys();
-    let tunnelId: string | null;
+    const tunnelIterator: Iterator<TunnelRouteIdentifier> = this._liveTunnels.keys();
+    let tunnelId: TunnelRouteIdentifier | null;
     // Iterate and shutdown all live instances
     while ((tunnelId = tunnelIterator.next().value) != null) {
       await this.shutdownTunnel(tunnelId);
