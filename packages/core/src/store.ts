@@ -118,7 +118,13 @@ export class TunnelStore extends EventEmitter {
   }
   // Creates a new tunnel instance
   public async createTunnel (request: TunnelRouteConfigurationRequest): Promise<TunnelRouteIdentifier> {
-    // Check service is healthy
+    // Check tunnel already exists for origin
+    const liveTunnels: Array<TunnelRouteConfiguration> = await this.getRecords();
+    const found: TunnelRouteConfiguration | undefined = liveTunnels.find((route) => route.originURL.toLowerCase() === request.originURL.toLowerCase());
+    if (found) {
+      throw new Error(`createTunnel: Existing tunnel found for ${request.originURL}`);
+    }
+    // If not found, first check service is healthy
     const isActive: boolean = await UpstreamHealthCheckTask.checkAvailable(request.originURL);
     if (!isActive) {
       throw new Error(`createTunnel: ${request.originURL} is not online`);

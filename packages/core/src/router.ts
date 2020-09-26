@@ -35,13 +35,6 @@ export default class Router {
     for (const tunnelId of tunnelIds) {
       await this.removeRoute(tunnelId);
     }
-
-    // Remove set key
-    const keyNumRemoved: number = await this._ds.del(TUNNEL_LIST_KEY);
-
-    if (keyNumRemoved === 0) {
-      throw new Error('cleanup: Unable to remove key to set');
-    }
   }
 
   public async getRoutes (): Promise<Array<TunnelRouteConfiguration>> {
