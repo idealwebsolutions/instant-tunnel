@@ -66,9 +66,11 @@ export default class Router {
   public async addRoute (config: TunnelRouteConfiguration): Promise<void> {
     // Exit early if route already exists
     const hasRoute: Redis.BooleanResponse = await this._ds.sismember(TUNNEL_LIST_KEY, config.id);
+
     if (hasRoute) {
       return;
     }
+    
     // Set hash fields for origin and public urls
     const originURLSetResponse: Redis.BooleanResponse = await this._ds.hset(`${TUNNEL_LIST_KEY}_${config.id}`, ORIGIN_URL_FIELD, config.originURL);
 
@@ -81,6 +83,7 @@ export default class Router {
     if (!publicURLSetResponse) {
       throw new Error('addRoute: Failed to add public url field');
     }
+
     // Add id to set of known tunnels
     const numAddedResponse: number = await this._ds.sadd(TUNNEL_LIST_KEY, config.id);
 
@@ -90,6 +93,13 @@ export default class Router {
   }
 
   public async removeRoute (tunnelId: TunnelRouteIdentifier): Promise<void> {
+    // Check key exists
+    const keyExists: number = await this._ds.exists(`${TUNNEL_LIST_KEY}_${tunnelId}`);
+    
+    if (keyExists === 0) {
+      return;
+    }
+
     // Remove tunnel specific entry
     const keyDeletionResponse: number = await this._ds.del(`${TUNNEL_LIST_KEY}_${tunnelId}`);
 
