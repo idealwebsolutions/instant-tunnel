@@ -17,10 +17,10 @@ const {
   // Initialize store
   const store = createStore();
   // Listen for events
-  store.once('connected', (connectedEvent) => console.log(`Live tunnel (${connectedEvent.id}) url: ${connectedEvent.publicURL}`));
-  store.once('disconnected', (disconnectedEvent) => console.log(`Tunnel (${disconnectedEvent.id}) disconnected`));
-  store.once('expired', (expiredEvent) => console.log(`Tunnel (${expiredEvent.id}) has expired`));
-  store.once('timeout', (timeoutEvent) => console.log(`Timeout occured for tunnel (${timeoutEvent.id})`));
+  store.on('connected', (connectedEvent) => console.log(`Live tunnel (${connectedEvent.id}) url: ${connectedEvent.publicURL}`));
+  store.on('disconnected', (disconnectedEvent) => console.log(`Tunnel (${disconnectedEvent.id}) disconnected`));
+  store.on('expired', (expiredEvent) => console.log(`Tunnel (${expiredEvent.id}) has expired`));
+  store.on('timeout', (timeoutEvent) => console.log(`Timeout occured for tunnel (${timeoutEvent.id})`));
   store.on('error', (err) => console.error(err));
   // Tunnel identifier - Use tunnel id for other actions
   let tunnelId;
