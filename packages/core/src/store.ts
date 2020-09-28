@@ -166,13 +166,13 @@ export class TunnelStore extends EventEmitter {
     if (!this._liveTunnels.has(tunnelId)) {
       throw new Error('getTunnelStatus: No tunnel exists');
     }
-
+    // Fetch associated tunnel
     const tunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
-
+    // Check correct instance lives
     if (!tunnel || !(tunnel instanceof Tunnel)) {
       throw new Error('getTunnelStatus: Invalid instance encountered');
     }
-    
+    // Return current state (will always either be ACTIVE, PENDING or DISABLED)
     return tunnel.currentState;
   }
   // Returns all tunnel route configurations
