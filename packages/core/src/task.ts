@@ -7,7 +7,6 @@ import {
 import isReachable from 'is-reachable';
 import {
   URL,
-  DEFAULT_TIMEOUT_INTERVAL_MS,
   TIMEOUT_EVENT,
   EXPIRED_EVENT
 } from './constants';
@@ -65,7 +64,7 @@ export class UpstreamHealthCheckTask extends Task {
   private _targetURL: URL;
   private _intervalInMs: number;
 
-  constructor (targetURL: URL, intervalInMs = DEFAULT_TIMEOUT_INTERVAL_MS) {
+  constructor (targetURL: URL, intervalInMs: number) {
     super();
 
     this._intervalTimer = null;

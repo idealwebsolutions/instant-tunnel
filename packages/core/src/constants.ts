@@ -2,17 +2,21 @@ const NAMESPACE: string = process.env.NAMESPACE || 'instant-tunnel';
 
 export type URL = string;
 export type TunnelRouteIdentifier = string;
+export interface TunnelStorePreferences {
+  readonly disableTimeoutCheck?: boolean,
+  readonly timeoutIntervalPreference: number
+}
 export interface TunnelRouteConfiguration {
-  id: TunnelRouteIdentifier,
-  publicURL: URL,
-  originURL: URL,
-  expiration?: number,
+  readonly id: TunnelRouteIdentifier,
+  readonly publicURL: URL,
+  readonly originURL: URL,
+  readonly expiration?: number,
   active?: boolean,
 }
 export interface TunnelRouteConfigurationRequest {
-  name: string,
-  originURL: URL,
-  expiration?: number,
+  readonly name: string,
+  readonly originURL: URL,
+  readonly expiration?: number,
 }
 export enum TunnelState {
   PENDING = 0,
@@ -20,21 +24,21 @@ export enum TunnelState {
   DISABLED = 2
 }
 export interface TunnelConnectedEvent {
-  id: TunnelRouteIdentifier,
-  publicURL: URL
+  readonly id: TunnelRouteIdentifier,
+  readonly publicURL: URL
 }
 export interface TunnelDisconnectedEvent {
-  id: TunnelRouteIdentifier,
+  readonly id: TunnelRouteIdentifier,
 }
 export interface TunnelErrorEvent {
-  id: TunnelRouteIdentifier,
-  error: Error
+  readonly id: TunnelRouteIdentifier,
+  readonly error: Error
 }
 export interface UpstreamTimeoutEvent {
-  id: TunnelRouteIdentifier
+  readonly id: TunnelRouteIdentifier
 }
 export interface ExpiredEvent {
-  id: TunnelRouteIdentifier
+  readonly id: TunnelRouteIdentifier
 }
 export const CONNECTED_EVENT = 'connected';
 export const DISCONNECTED_EVENT = 'disconnected';
@@ -51,4 +55,7 @@ export const VALID_TUNNEL_NAME = /^[A-Za-z-]{2,32}[A-Za-z]$/;
 export const TUNNEL_LIST_KEY = `${NAMESPACE}:tunnels`;
 export const ORIGIN_URL_FIELD = 'origin_url';
 export const PUBLIC_URL_FIELD = 'public_url';
-export const DEFAULT_TIMEOUT_INTERVAL_MS = 10000;
+export const DEFAULT_STORE_PREFERENCES = Object.freeze({
+  disableTimeoutCheck: false,
+  timeoutIntervalPreference: 30000 // change default timeout to 30 seconds
+});

@@ -7,6 +7,7 @@ import {
 } from './task';
 import {
   URL,
+  TunnelStorePreferences,
   TunnelRouteConfiguration,
   TunnelState,
   TunnelRouteConfigurationRequest,
@@ -16,22 +17,25 @@ import {
   TunnelErrorEvent,
   UpstreamTimeoutEvent,
   ExpiredEvent,
+  DEFAULT_STORE_PREFERENCES,
   VALID_TUNNEL_NAME,
   CONNECTED_EVENT,
   READY_EVENT,
   DISCONNECTED_EVENT,
   FINISH_EVENT,
   TIMEOUT_EVENT,
-  EXPIRED_EVENT
+  EXPIRED_EVENT,
 } from './constants';
 
 export class TunnelStore extends EventEmitter {
+  private _storePreferences: TunnelStorePreferences;
   private _router: Router;
   private _liveTunnels: Map<URL, Tunnel>;
 
-  constructor () {
+  constructor (storePreferences: TunnelStorePreferences) {
     super();
     
+    this._storePreferences = storePreferences;
     this._router = new Router();
     this._liveTunnels = new Map<URL, Tunnel>();
   }
@@ -65,18 +69,21 @@ export class TunnelStore extends EventEmitter {
         });
         cancellationTask.start();
       }
-      // Start health check task
-      healthCheck = new UpstreamHealthCheckTask(tunnel.address);
-      // Check for timeouts
-      healthCheck.once(TIMEOUT_EVENT, async () => {
-        // Pass along timeout to client
-        const timeoutEvent: UpstreamTimeoutEvent = Object.freeze({
-          id: tunnel.id
+      // Disable upstream health check if flag enabled
+      if (!this._storePreferences.disableTimeoutCheck) {
+        // Start health check task, include interval preference if set
+        healthCheck = new UpstreamHealthCheckTask(tunnel.address, this._storePreferences.timeoutIntervalPreference);
+        // Check for timeouts
+        healthCheck.once(TIMEOUT_EVENT, async () => {
+          // Pass along timeout to client
+          const timeoutEvent: UpstreamTimeoutEvent = Object.freeze({
+            id: tunnel.id
+          });
+          this.emit(TIMEOUT_EVENT, timeoutEvent);
+          await this.shutdownTunnel(tunnel.id);
         });
-        this.emit(TIMEOUT_EVENT, timeoutEvent);
-        await this.shutdownTunnel(tunnel.id);
-      });
-      healthCheck.start();
+        healthCheck.start();
+      }
       // Emit tunnel connected event
       const connectedEvent: TunnelConnectedEvent = Object.freeze({
         id: tunnel.id,
@@ -118,8 +125,8 @@ export class TunnelStore extends EventEmitter {
   }
   // Creates a new tunnel instance
   public async createTunnel (request: TunnelRouteConfigurationRequest): Promise<TunnelRouteIdentifier> {
-    // Check tunnel already exists for origin
     const liveTunnels: Array<TunnelRouteConfiguration> = await this.getRecords();
+    // Check tunnel already exists for origin
     const found: TunnelRouteConfiguration | undefined = liveTunnels.find((route) => route.originURL.toLowerCase() === request.originURL.toLowerCase());
     if (found) {
       throw new Error(`createTunnel: Existing tunnel found for ${request.originURL}`);
@@ -192,6 +199,6 @@ export class TunnelStore extends EventEmitter {
   }
 }
 
-export function createStore (): TunnelStore {
-  return new TunnelStore();
+export function createStore (storePrefs: TunnelStorePreferences = DEFAULT_STORE_PREFERENCES): TunnelStore {
+  return new TunnelStore(storePrefs);
 }
