@@ -63,6 +63,7 @@ export class UpstreamHealthCheckTask extends Task {
   private _intervalTimer: SetIntervalAsyncTimer | null;
   private _targetURL: URL;
   private _intervalInMs: number;
+  private _timeoutOccurances: number;
 
   constructor (targetURL: URL, intervalInMs: number) {
     super();
@@ -70,15 +71,21 @@ export class UpstreamHealthCheckTask extends Task {
     this._intervalTimer = null;
     this._targetURL = targetURL;
     this._intervalInMs = intervalInMs;
+    this._timeoutOccurances = 0;
   }
 
   private async _run (): Promise<void> {
     const result: boolean = await UpstreamHealthCheckTask.checkAvailable(this._targetURL);
     if (!result) {
-      // Emit timeout event
-      this.emit(TIMEOUT_EVENT);
-      // Automatically end task once timeout has occured
-      this.stop();
+      // Increment occurance
+      this._timeoutOccurances = this._timeoutOccurances + 1;
+      // If at least three timeouts occur, timeout and stop
+      if (this._timeoutOccurances >= 3) {
+        // Emit timeout event
+        this.emit(TIMEOUT_EVENT);
+        // Automatically end task once timeout has occured
+        this.stop();
+      }
     }
   }
 

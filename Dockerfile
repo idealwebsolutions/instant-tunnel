@@ -15,7 +15,7 @@ FROM node:lts-alpine
 
 WORKDIR /usr/src/app
 
-COPY . /opt/instant-tunnel/packages/app
+COPY . /opt/instant-tunnel/packages
 WORKDIR /opt/instant-tunnel/packages/app
 
 COPY --from=gobuild /go/src/github.com/cloudflare/cloudflared/cmd/cloudflared/cloudflared /usr/local/bin/cloudflared

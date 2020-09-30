@@ -84,7 +84,7 @@ export default class Tunnel extends EventEmitter {
 
   private _open (): void {
     try {
-      this._tunnelProcess = execa(CLOUDFLARED_PATH, ['tunnel', '--url', this._address]);
+      this._tunnelProcess = execa(CLOUDFLARED_PATH, ['tunnel', '--url', this._address, '--no-autoupdate']);
     } catch (err) {
       console.error(err);
       throw new Error('create: unable to spawn new cloudflared process');
