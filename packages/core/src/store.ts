@@ -131,14 +131,14 @@ export class TunnelStore extends EventEmitter {
     if (found) {
       throw new Error(`createTunnel: Existing tunnel found for ${request.originURL}`);
     }
+    // Check valid service name
+    if (!request.name.length || !VALID_TUNNEL_NAME.test(request.name)) {
+      throw new Error(`createTunnel: Name (${request.name}) is invalid`);
+    }
     // If not found, first check service is healthy
     const isActive: boolean = await UpstreamHealthCheckTask.checkAvailable(request.originURL);
     if (!isActive) {
       throw new Error(`createTunnel: ${request.originURL} is not online`);
-    }
-    // Check valid name
-    if (!request.name.length || !VALID_TUNNEL_NAME.test(request.name)) {
-      throw new Error(`createTunnel: Name (${name}) is invalid`);
     }
     // Begin tunnel creation
     const tunnel: Tunnel = Tunnel.create(request.name, request.originURL);
