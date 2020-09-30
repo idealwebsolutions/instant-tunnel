@@ -41,8 +41,6 @@ export class TunnelStore extends EventEmitter {
   }
   // Connects tunnel specific events with store
   private _setupListeners (tunnel: Tunnel, expiration: number): void {
-    let cancellationTask: ScheduledCancellationTask | null;
-    let healthCheck: UpstreamHealthCheckTask | null;
     // Listen for ready event
     tunnel.once(READY_EVENT, async (publicURL: URL) => {
       const config: TunnelRouteConfiguration = Object.freeze({
@@ -57,7 +55,11 @@ export class TunnelStore extends EventEmitter {
       await this._router.addRoute(config);
       // Start cancellation task if expiration set
       if (expiration && expiration > 0) {
-        cancellationTask = new ScheduledCancellationTask(expiration);
+        // Start cancellation task
+        const cancellationTask: ScheduledCancellationTask = new ScheduledCancellationTask(expiration);
+        // Set task with tunnel
+        tunnel.setBackgroundTask(cancellationTask);
+        // Check for cancellations
         cancellationTask.once(EXPIRED_EVENT, async () => {
           // Emit cancellation
           const expiredEvent: ExpiredEvent = Object.freeze({
@@ -72,7 +74,9 @@ export class TunnelStore extends EventEmitter {
       // Disable upstream health check if flag enabled
       if (!this._storePreferences.disableTimeoutCheck) {
         // Start health check task, include interval preference if set
-        healthCheck = new UpstreamHealthCheckTask(tunnel.address, this._storePreferences.timeoutIntervalPreference);
+        const healthCheck: UpstreamHealthCheckTask = new UpstreamHealthCheckTask(tunnel.address, this._storePreferences.timeoutIntervalPreference);
+        // Set task with tunnel
+        tunnel.setBackgroundTask(healthCheck);
         // Check for timeouts
         healthCheck.once(TIMEOUT_EVENT, async () => {
           // Pass along timeout to client
@@ -98,14 +102,6 @@ export class TunnelStore extends EventEmitter {
         id: tunnel.id
       });
       this.emit(DISCONNECTED_EVENT, disconnectedEvent);
-      // Stop cancellation task
-      if (cancellationTask && cancellationTask instanceof ScheduledCancellationTask) {
-        cancellationTask.stop();
-      }
-      // Stop health check task
-      if (healthCheck && healthCheck instanceof UpstreamHealthCheckTask) {
-        healthCheck.stop();
-      }
       // Delete and cleanup
       if (this._liveTunnels.has(tunnel.id)) {
         const liveTunnel: Tunnel | undefined = this._liveTunnels.get(tunnel.id);

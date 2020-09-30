@@ -4,6 +4,10 @@ import { EventEmitter } from 'events';
 import { nanoid } from 'nanoid';
 
 import {
+  Task
+} from './task';
+
+import {
   TunnelState,
   TunnelRouteIdentifier,
   URL,
@@ -22,6 +26,7 @@ export default class Tunnel extends EventEmitter {
   private _address: string;
   private _debug: boolean;
   private _state: TunnelState;
+  private _backgroundTasks: Array<Task>;
 
   constructor (name: string, address: URL, debug = false) {
     super();
@@ -31,6 +36,7 @@ export default class Tunnel extends EventEmitter {
     this._debug = debug;
     this._state = TunnelState.PENDING;
     this._tunnelProcess = null;
+    this._backgroundTasks = [];
   }
 
   public get id (): TunnelRouteIdentifier {
@@ -92,10 +98,20 @@ export default class Tunnel extends EventEmitter {
     this._setupHandlers();
   }
 
+  public setBackgroundTask (task: Task) {
+    if (!(task instanceof Task)) {
+      throw new Error('setBackgroundTask: Task is not a valid task');
+    }
+    this._backgroundTasks.push(task);
+  }
+
   public destroy (): void {
     if (!this._tunnelProcess) {
       throw new Error('destroy: No child process found');
     }
+    // Terminate all running tasks for this tunnel
+    this._backgroundTasks.forEach((task: Task) => task.stop());
+    // Send kill signal for tunnel
     this._tunnelProcess.kill('SIGKILL');
     this._tunnelProcess.unref();
   }

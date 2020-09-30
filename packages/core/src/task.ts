@@ -11,7 +11,7 @@ import {
   EXPIRED_EVENT
 } from './constants';
 // Simple interface for defining tasks
-abstract class Task extends EventEmitter {
+export abstract class Task extends EventEmitter {
   constructor () {
     super();
   }
