@@ -14,9 +14,7 @@ const port = process.env.PORT || 9000;
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
-const store = createStore(Object.freeze({
-  timeoutIntervalPreference: 30000
-}));
+const store = createStore();
 const storeController = new TunnelController(store);
 
 app.prepare().then(() => {
