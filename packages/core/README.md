@@ -15,7 +15,10 @@ const {
 
 (async () => {
   // Initialize store
-  const store = createStore();
+  const store = createStore({
+    disableTimeoutCheck: true, // optional: manually disables handling health checks for timeout from origin (default: true)
+    timeoutIntervalPreference: 45000 // optional: changes timeout check to 45 seconds (default: 30000)
+  });
   // Listen for events
   store.on('connected', (connectedEvent) => console.log(`Live tunnel (${connectedEvent.id}) url: ${connectedEvent.publicURL}`));
   store.on('disconnected', (disconnectedEvent) => console.log(`Tunnel (${disconnectedEvent.id}) disconnected`));
