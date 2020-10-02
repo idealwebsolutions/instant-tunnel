@@ -5,6 +5,7 @@
   "main": "test.js",
   "scripts": {
     "bootstrap": "lerna bootstrap && lerna link",
+    "build-all": "lerna run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

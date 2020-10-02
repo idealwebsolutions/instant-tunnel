@@ -17,14 +17,12 @@ WORKDIR /usr/src/app
 COPY . /opt/instant-tunnel
 
 WORKDIR /opt/instant-tunnel
+
 RUN npm install
 RUN npm run bootstrap
-
-WORKDIR /opt/instant-tunnel/packages/core
-RUN npm run build
+RUN npm run build-all
 
 WORKDIR /opt/instant-tunnel/packages/app
-RUN npm run build
 
 COPY --from=gobuild /go/src/github.com/cloudflare/cloudflared/cmd/cloudflared/cloudflared /usr/local/bin/cloudflared
 
