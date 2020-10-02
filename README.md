@@ -29,7 +29,7 @@ There's several upsides to using Cloudflare Argo ([see here](https://www.cloudfl
 App could use some improvements visually, will work on it incrementally as necessary to polish. Suggestions are welcome. 
 - Add alerts for timeouts
 - Add logging to each tunnel as well as uptime, etc
-- Include area/page to configure override global options
+- Include area/page to override global options (server)
 
 ## License
 MIT

@@ -60,7 +60,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
       let unsetOccured: boolean = false;
       // If a timer was active previously, unset
       if (this.state.expiringTimeoutId) {
-        clearTimeout(this.state.expiringTimeoutId)
+        clearTimeout(this.state.expiringTimeoutId);
         unsetOccured = true;
       }
       // Set next state after change occurs
