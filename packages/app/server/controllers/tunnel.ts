@@ -24,47 +24,49 @@ export default class TunnelController {
     this._store = store;
   }
 
-  public async fetch (req: Request, res: Response<ActiveRoutesResponse | ErrorResponse>) {
+  public async fetch (req: Request, res: Response<ActiveRoutesResponse | ErrorResponse>): Promise<void> {
     let routes: Array<TunnelRouteConfiguration>;
     try {
       routes = await this._store.getRecords();
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({
+      res.status(500).json({
         error: err.message
       });
+      return;
     }
     res.status(200).json({
       routes 
     });
   }
 
-  public async kill (req: Request, res: Response<void | ErrorResponse>) {
+  public async kill (req: Request, res: Response<void | ErrorResponse>): Promise<void> {
     try {
       await this._store.shutdownTunnel(req.params.id);
     } catch (err) {
-      return res.status(500).json({
+      res.status(500).json({
         error: err.message
       });
+      return;
     }
     res.status(204).end();
   }
   
-  public async create (req: Request, res: Response<TunnelIdResponse | ErrorResponse>) {
+  public async create (req: Request, res: Response<TunnelIdResponse | ErrorResponse>): Promise<void> {
     if (!req.body) {
-      return res.status(400).json({
+      res.status(400).json({
         error: 'Invalid data passed'
       });
+      return;
     }
     const tunnelConfigRequest: TunnelRouteConfigurationRequest = req.body;
     let tunnelId: string;
     try {
       tunnelId = await this._store.createTunnel(tunnelConfigRequest);
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({
+      res.status(500).json({
         error: err.message
       });
+      return;
     }
     res.status(200).json({
       tunnelId

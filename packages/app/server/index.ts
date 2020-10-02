@@ -40,7 +40,7 @@ app.prepare().then(() => {
     console.log(`Listening on port ${addressInfo.port}`);
   });
   // Add exit callback for a clean shutdown
-  exitHook((done: Function) => {
+  exitHook((done) => {
     bound.close();
     store.destroy().then(() => {
       bound.unref();

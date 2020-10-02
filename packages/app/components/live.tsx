@@ -1,18 +1,18 @@
 // LiveRouteEntry.tsx
 import React from 'react';
 import { mutate } from 'swr';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Button from 'react-bootstrap/Button';
 import { 
   TunnelRouteConfiguration, 
   TunnelRouteIdentifier 
 } from 'core';
-import ButtonGroup from 'react-bootstrap/ButtonGroup';
-import Button from 'react-bootstrap/Button';
 
 type LiveRouteProps = {
   route: TunnelRouteConfiguration
 }
 
-const _deleteTunnel = async (routeId: TunnelRouteIdentifier) => {
+const _deleteTunnel = async (routeId: TunnelRouteIdentifier): Promise<void> => {
   // Deletes tunnel entry
   let res: any;
 
@@ -22,7 +22,8 @@ const _deleteTunnel = async (routeId: TunnelRouteIdentifier) => {
     });
   } catch (err) {
     // TODO: handle error
-    return console.error(err);
+    console.error(err);
+    return;
   }
 
   if (res.ok === 204) {
@@ -31,7 +32,7 @@ const _deleteTunnel = async (routeId: TunnelRouteIdentifier) => {
   }
 }
 
-export default function LiveRouteEntry (props: LiveRouteProps) {
+export default function LiveRouteEntry (props: LiveRouteProps): React.FunctionComponentElement<LiveRouteProps> {
   const [disabled, setDisabled] = React.useState(true);
   const route: TunnelRouteConfiguration = props.route;
   const name: string = route.id.split('_')[0];
@@ -40,7 +41,7 @@ export default function LiveRouteEntry (props: LiveRouteProps) {
   React.useEffect(() => {
     const timeoutId: NodeJS.Timeout = setTimeout(() => setDisabled(false), 25000); // 25 seconds
     // Add cleanup for unmount
-    return function cleanup () {
+    return function cleanup (): void {
       clearTimeout(timeoutId);
     }
   });

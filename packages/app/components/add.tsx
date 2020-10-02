@@ -25,7 +25,8 @@ type AddRouteFormState = {
   expiringTimeoutId?: NodeJS.Timeout | null
 }
 
-type AddRouteProps = {};
+type AddRouteProps = Record<string, unknown>;
+
 type AddRouteResponseData = {
   tunnelId: string
 }
@@ -57,7 +58,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
       e.preventDefault();
       const name: string = this.state.name || '';
       const originURL: string = this.state.originURL || '';
-      let unsetOccured: boolean = false;
+      let unsetOccured = false;
       // If a timer was active previously, unset
       if (this.state.expiringTimeoutId) {
         clearTimeout(this.state.expiringTimeoutId);
@@ -73,7 +74,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     }
   }
 
-  private async _create (e: React.FormEvent<HTMLFormElement>) {
+  private async _create (e: React.FormEvent<HTMLFormElement>): Promise<void> {
     const name: string = this.state.name || '';
     const originURL: string = this.state.originURL || 'localhost:8080';
 
@@ -88,7 +89,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
         });
         return;
       }
-      if (!/^\S+\:\d+$/.test(originURL)) {
+      if (!/^\S+:\d+$/.test(originURL)) {
         this.setState({
           originURL: '',
           validated: true
@@ -169,14 +170,14 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     mutate('/api/tunnels');
   }
 
-  private _resetAlert () {
+  private _resetAlert (): void {
     this.setState({
       success: false,
       showAlert: false,
     });
   }
 
-  public render () {
+  public render (): React.ReactElement {
     return (
       <Form noValidate validated={this.state.validated} onSubmit={this._create.bind(this)}>
         { this.state.showAlert ? (

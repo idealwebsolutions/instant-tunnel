@@ -22,7 +22,9 @@ import {
 import styles from '../styles/Dashboard.module.css'
 import { TunnelRouteConfiguration } from 'core';
 
-function AboutPane (): React.FunctionComponentElement<any> {
+type EmptyProps = Record<string, unknown>;
+
+function AboutPane (): React.FunctionComponentElement<EmptyProps> {
   return (
     <Col className="py-1">
       <Row>
@@ -43,7 +45,7 @@ function AboutPane (): React.FunctionComponentElement<any> {
   );
 }
 
-function RouteSettingsPane (): React.FunctionComponentElement<any> {
+function RouteSettingsPane (): React.FunctionComponentElement<EmptyProps> {
   const { data, error } = useSWR(`/api/tunnels`);
 
   if (error) {
@@ -104,7 +106,7 @@ function RouteSettingsPane (): React.FunctionComponentElement<any> {
   );
 }
 
-export default function Dashboard (): React.FunctionComponentElement<any> {
+export default function Dashboard (): React.FunctionComponentElement<EmptyProps> {
   const [selectedPane, setPane] = React.useState('about');
 
   return (

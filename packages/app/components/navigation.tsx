@@ -1,12 +1,13 @@
 // Navigation.tsx
 import Link from 'next/link';
+import { ReactElement } from 'react';
 import Navbar from 'react-bootstrap/Navbar';
 import NavbarBrand from 'react-bootstrap/NavbarBrand';
 import {
   GrDeploy
 } from 'react-icons/gr';
 
-export default function Navigation () {
+export default function Navigation (): ReactElement {
   return (
   <Navbar bg="warning">
     <Link href="/" passHref>
@@ -24,5 +25,5 @@ export default function Navigation () {
       </NavbarBrand>
     </Link>
   </Navbar>
-  )
+  );
 }

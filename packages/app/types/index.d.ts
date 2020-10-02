@@ -1,1 +1,1 @@
-/// <reference path="async-exit-hook/index.d.ts" />
+import 'async-exit-hook/index.d.ts';
