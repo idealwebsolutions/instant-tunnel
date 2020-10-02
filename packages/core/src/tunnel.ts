@@ -98,7 +98,7 @@ export default class Tunnel extends EventEmitter {
     this._setupHandlers();
   }
 
-  public setBackgroundTask (task: Task) {
+  public setBackgroundTask (task: Task): void {
     if (!(task instanceof Task)) {
       throw new Error('setBackgroundTask: Task is not a valid task');
     }
