@@ -21,8 +21,8 @@ Two choices, recommended `Dockerfile` is ready to use (don't forget to include r
 
 ## Motives
 There's several upsides to using Cloudflare Argo ([see here](https://www.cloudflare.com/products/argo-smart-routing/)) but here are my own:
-- Wanted to build a platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
 - Wanted to utilize old/unused devices sitting around and spend less on hosting services.
+- Would like to build a platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
 - Would like to expand to creating a FaaS platform similar to AWS using [OpenFaaS](https://github.com/openfaas/faas) in the near future.
 
 ## TODO
