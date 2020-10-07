@@ -22,7 +22,8 @@ import {
 
 export default class Tunnel extends EventEmitter {
   private _tunnelProcess: ChildProcess | null;
-  private _rid: string;
+  private _name: string;
+  private _rid: TunnelRouteIdentifier;
   private _address: string;
   private _debug: boolean;
   private _state: TunnelState;
@@ -31,12 +32,17 @@ export default class Tunnel extends EventEmitter {
   constructor (name: string, address: URL, debug = false) {
     super();
 
+    this._name = name;
     this._rid = `${name}_${nanoid()}`;
     this._address = address;
     this._debug = debug;
     this._state = TunnelState.PENDING;
     this._tunnelProcess = null;
     this._backgroundTasks = [];
+  }
+
+  public get name (): string {
+    return this._name;
   }
 
   public get id (): TunnelRouteIdentifier {
@@ -58,6 +64,7 @@ export default class Tunnel extends EventEmitter {
     this._state = TunnelState.DISABLED;
     this.emit(FINISH_EVENT);
     this._tunnelProcess.removeAllListeners();
+    this._tunnelProcess = null;
     this.removeAllListeners();
   }
 
@@ -114,6 +121,7 @@ export default class Tunnel extends EventEmitter {
     // Send kill signal for tunnel
     this._tunnelProcess.kill('SIGKILL');
     this._tunnelProcess.unref();
+    this._cleanup();
   }
 
   public static create (name: string, address: string, debug = false): Tunnel {    

@@ -7,6 +7,7 @@ import {
 } from './task';
 import {
   URL,
+  TunnelRouteEntry,
   TunnelStorePreferences,
   TunnelRouteConfiguration,
   TunnelState,
@@ -35,19 +36,20 @@ export class TunnelStore extends EventEmitter {
   constructor (storePreferences: TunnelStorePreferences) {
     super();
     
-    this._storePreferences = storePreferences;
+    this._storePreferences = Object.freeze(storePreferences);
     this._router = new Router();
     this._liveTunnels = new Map<URL, Tunnel>();
   }
   // Connects tunnel specific events with store
-  private _setupListeners (tunnel: Tunnel, expiration: number): void {
+  private _setupListeners (tunnel: Tunnel, expiration: number, persist = false): void {
     // Listen for ready event
     tunnel.once(READY_EVENT, async (publicURL: URL) => {
       const config: TunnelRouteConfiguration = Object.freeze({
         id: tunnel.id,
-        active: tunnel.currentState === TunnelState.ACTIVE,
+        name: tunnel.name,
         originURL: tunnel.address,
         publicURL,
+        persist,
       });
       // Add to live tunnels
       this._liveTunnels.set(tunnel.id, tunnel);
@@ -119,11 +121,63 @@ export class TunnelStore extends EventEmitter {
       this.emit('error', errorEvent);
     });
   }
+  // Returns current status of tunnel
+  private _getTunnelStatus (tunnelId: TunnelRouteIdentifier): TunnelState {
+    if (!this._liveTunnels.has(tunnelId)) {
+      throw new Error('getTunnelStatus: No tunnel exists');
+    }
+    // Fetch associated tunnel
+    const tunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
+    // Check correct instance lives
+    if (!tunnel || !(tunnel instanceof Tunnel)) {
+      throw new Error('getTunnelStatus: Invalid instance encountered');
+    }
+    // Return current state (will always either be ACTIVE, PENDING or DISABLED)
+    return tunnel.currentState;
+  }
+  // Revives a single shutdown instance
+  public async reinstantiate (oldTunnelId: TunnelRouteIdentifier, persist = false): Promise<void> {
+    const tunnelEntry: TunnelRouteEntry = await this._getTunnel(oldTunnelId);
+    if (tunnelEntry.state === TunnelState.DISABLED) {
+      // Remove old route with associated id
+      await this._router.removeRoute(oldTunnelId);
+      // Start up a brand new tunnel with same options
+      const newTunnelRequest: TunnelRouteConfigurationRequest = Object.freeze({
+        name: tunnelEntry.config.name,
+        originURL: tunnelEntry.config.originURL,
+        expiration: tunnelEntry.config.expiration,
+        persist
+      });
+      await this.createTunnel(newTunnelRequest);
+    }
+  }
+  // Revives shutdown instances if persisted option is enabled
+  public async reinstantiateAll (): Promise<void> {
+    const tunnels: Array<TunnelRouteEntry> = await this.getTunnels();
+    // Iterate over each tunnel that is disabled with persistance enabled
+    tunnels.forEach(async (tunnelEntry: TunnelRouteEntry) => {
+      if (tunnelEntry.state === TunnelState.DISABLED && tunnelEntry.config.persist) {
+        const oldTunnelId: TunnelRouteIdentifier = tunnelEntry.config.id;
+        // Remove old route with associated id
+        await this._router.removeRoute(oldTunnelId);
+        // Start up a brand new tunnel with same options
+        const newTunnelRequest: TunnelRouteConfigurationRequest = Object.freeze({
+          name: tunnelEntry.config.name,
+          originURL: tunnelEntry.config.originURL,
+          expiration: tunnelEntry.config.expiration,
+          persist: tunnelEntry.config.persist
+        });
+        await this.createTunnel(newTunnelRequest);
+      }
+    });
+  }
   // Creates a new tunnel instance
   public async createTunnel (request: TunnelRouteConfigurationRequest): Promise<TunnelRouteIdentifier> {
-    const liveTunnels: Array<TunnelRouteConfiguration> = await this.getRecords();
+    const liveTunnels: Array<TunnelRouteEntry> = await this.getTunnels();
     // Check tunnel already exists for origin
-    const found: TunnelRouteConfiguration | undefined = liveTunnels.find((route) => route.originURL.toLowerCase() === request.originURL.toLowerCase());
+    const found: TunnelRouteEntry | undefined = liveTunnels.find((route: TunnelRouteEntry) => 
+      route.config.originURL.toLowerCase() === request.originURL.toLowerCase()
+    );
     if (found) {
       throw new Error(`createTunnel: Existing tunnel found for ${request.originURL}`);
     }
@@ -138,17 +192,19 @@ export class TunnelStore extends EventEmitter {
     }
     // Begin tunnel creation
     const tunnel: Tunnel = Tunnel.create(request.name, request.originURL);
-    const trId: TunnelRouteIdentifier = tunnel.id;
+    const id: TunnelRouteIdentifier = tunnel.id;
     // Setup listeners
-    this._setupListeners(tunnel, request.expiration || 0);
+    this._setupListeners(tunnel, request.expiration || 0, request.persist);
     // Return identifier
-    return trId;
+    return id;
   }
   // Shuts down a single tunnel instance
-  public async shutdownTunnel (tunnelId: TunnelRouteIdentifier): Promise<void> {
+  public async shutdownTunnel (tunnelId: TunnelRouteIdentifier, forget = false): Promise<void> {
     if (this._liveTunnels.has(tunnelId)) {
-      // Removes record on request
-      await this._router.removeRoute(tunnelId);
+      // Permanently removes record on request
+      if (forget) {
+        await this._router.removeRoute(tunnelId);
+      }
       // Fetch associated tunnel
       const liveTunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
       // Check correct instance lives
@@ -157,44 +213,57 @@ export class TunnelStore extends EventEmitter {
       }
     }
   }
-  // Returns current status of tunnel
-  public async getTunnelStatus (tunnelId: TunnelRouteIdentifier): Promise<TunnelState> {
-    if (!this._liveTunnels.has(tunnelId)) {
-      throw new Error('getTunnelStatus: No tunnel exists');
+  // Returns single tunnel route configuration include state
+  private async _getTunnel (id: TunnelRouteIdentifier): Promise<TunnelRouteEntry> {
+    const config: TunnelRouteConfiguration = await this._router.getRoute(id);
+    let state: TunnelState;
+    try {
+      state = this._getTunnelStatus(config.id);
+    } catch (err) {
+      state = TunnelState.DISABLED;
     }
-    // Fetch associated tunnel
-    const tunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
-    // Check correct instance lives
-    if (!tunnel || !(tunnel instanceof Tunnel)) {
-      throw new Error('getTunnelStatus: Invalid instance encountered');
-    }
-    // Return current state (will always either be ACTIVE, PENDING or DISABLED)
-    return tunnel.currentState;
+    const tunnelEntry: TunnelRouteEntry = Object.freeze({
+      config,
+      state
+    });
+    return tunnelEntry;
   }
-  // Returns all tunnel route configurations
-  public async getRecords (): Promise<Array<TunnelRouteConfiguration>> {
-    const tunnels: Array<TunnelRouteConfiguration> = await this._router.getRoutes();
-    return tunnels.map((tunnelConfig: TunnelRouteConfiguration) => Object.freeze(
-      Object.assign({}, tunnelConfig, {
-        active: this._liveTunnels.has(tunnelConfig.id)
-      })
-    ));
+  // Returns all tunnel route configuration including state
+  public async getTunnels (): Promise<Array<TunnelRouteEntry>> {
+    const tunnels: Array<TunnelRouteConfiguration> = await this._router.getAllRoutes();
+    return tunnels.map((config: TunnelRouteConfiguration) => {
+      let state: TunnelState;
+      try {
+        state = this._getTunnelStatus(config.id);
+      } catch (err) {
+        state = TunnelState.DISABLED;
+      }
+      const tunnelEntry: TunnelRouteEntry = Object.freeze({
+        config,
+        state
+      });
+      return tunnelEntry;
+    });
   }
   // Destroys entire store
-  public async destroy (): Promise<void> {
+  public async destroy (clear = false): Promise<void> {
     const tunnelIterator: Iterator<TunnelRouteIdentifier> = this._liveTunnels.keys();
     let tunnelId: TunnelRouteIdentifier | null;
     // Iterate and shutdown all live instances
     while ((tunnelId = tunnelIterator.next().value) != null) {
-      await this.shutdownTunnel(tunnelId);
+      // Delete if not persisting
+      const tunnelRouteConfig: TunnelRouteConfiguration = await this._router.getRoute(tunnelId);
+      await this.shutdownTunnel(tunnelId, !tunnelRouteConfig.persist);
     }
     // Destroy associated router
-    await this._router.destroy();
+    await this._router.destroy(clear);
     // Remove listeners
     this.removeAllListeners();
   }
 }
 
 export function createStore (storePrefs: TunnelStorePreferences = DEFAULT_STORE_PREFERENCES): TunnelStore {
-  return new TunnelStore(storePrefs);
+  const store = new TunnelStore(storePrefs);
+  setTimeout(async () => await store.reinstantiateAll(), 100);
+  return store;
 }

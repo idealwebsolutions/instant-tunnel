@@ -6,17 +6,19 @@ export interface TunnelStorePreferences {
   readonly disableTimeoutCheck?: boolean,
   readonly timeoutIntervalPreference: number
 }
-export interface TunnelRouteConfiguration {
+export interface TunnelRouteEntry {
+  readonly config: TunnelRouteConfiguration,
+  readonly state: TunnelState,
+}
+export interface TunnelRouteConfiguration extends TunnelRouteConfigurationRequest {
   readonly id: TunnelRouteIdentifier,
   readonly publicURL: URL,
-  readonly originURL: URL,
-  readonly expiration?: number,
-  active?: boolean,
 }
 export interface TunnelRouteConfigurationRequest {
   readonly name: string,
   readonly originURL: URL,
   readonly expiration?: number,
+  readonly persist?: boolean
 }
 export enum TunnelState {
   PENDING = 0,
@@ -53,8 +55,10 @@ export const CLOUDFLARED_PATH: string = process.env.CLOUDFLARED_PATH || 'cloudfl
 export const TEMPORARY_CLOUDFLARE_URL = /(https:\/\/.+\.trycloudflare\.com)/;
 export const VALID_TUNNEL_NAME = /^[A-Za-z-]{2,32}[A-Za-z]$/;
 export const TUNNEL_LIST_KEY = `${NAMESPACE}:tunnels`;
+export const NAME_FIELD = 'name';
 export const ORIGIN_URL_FIELD = 'origin_url';
 export const PUBLIC_URL_FIELD = 'public_url';
+export const PERSIST_FIELD = 'persist';
 export const DEFAULT_STORE_PREFERENCES = Object.freeze({
   disableTimeoutCheck: false,
   timeoutIntervalPreference: 30000 // change default timeout to 30 seconds

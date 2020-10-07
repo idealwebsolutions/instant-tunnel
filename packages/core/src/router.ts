@@ -2,6 +2,8 @@ import Redis from 'ioredis';
 import {
   URL,
   TUNNEL_LIST_KEY,
+  NAME_FIELD,
+  PERSIST_FIELD,
   PUBLIC_URL_FIELD,
   ORIGIN_URL_FIELD,
   TunnelRouteConfiguration,
@@ -37,29 +39,40 @@ export default class Router {
     }
   }
 
-  public async getRoutes (): Promise<Array<TunnelRouteConfiguration>> {
+  public async getRoute (id: TunnelRouteIdentifier): Promise<TunnelRouteConfiguration> {
+    const name: string | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${id}`, NAME_FIELD);
+    const publicURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${id}`, PUBLIC_URL_FIELD);
+    const originURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${id}`, ORIGIN_URL_FIELD);
+    const persist: string | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${id}`, PERSIST_FIELD);
+      
+    if (!name) {
+      throw new Error('Missing name for tunnel configuration');
+    }
+
+    if (!originURL) {
+      throw new Error('Missing origin url for tunnel configuration');
+    }
+
+    if (!publicURL) {
+      throw new Error('Missing public url for tunnel configuration');
+    }
+
+    const route: TunnelRouteConfiguration = Object.freeze({
+      id,
+      name,
+      publicURL,
+      originURL,
+      persist: persist === 'true'
+    });
+      
+    return route;
+  }
+
+  public async getAllRoutes (): Promise<Array<TunnelRouteConfiguration>> {
     const tunnels: Array<string> = await this._ds.smembers(TUNNEL_LIST_KEY);
-    const tunnelRecords: Array<TunnelRouteConfiguration> = await Promise.all(tunnels.map(async (tunnelId: string) => {
-      const publicURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${tunnelId}`, PUBLIC_URL_FIELD);
-      const originURL: URL | null = await this._ds.hget(`${TUNNEL_LIST_KEY}_${tunnelId}`, ORIGIN_URL_FIELD);
-      
-      if (!originURL) {
-        throw new Error(`Missing origin url for tunnel configuration`);
-      }
-
-      if (!publicURL) {
-        throw new Error(`Missing public url for tunnel configuration`);
-      }
-
-      const route: TunnelRouteConfiguration = Object.freeze({
-        id: tunnelId,
-        publicURL,
-        originURL,
-      });
-      
-      return route;
-    }));
-
+    const tunnelRecords: Array<TunnelRouteConfiguration> = await Promise.all(
+      tunnels.map(async (id: TunnelRouteIdentifier) => await this.getRoute(id))
+    );
     return tunnelRecords;
   }
 
@@ -71,7 +84,13 @@ export default class Router {
       return;
     }
     
-    // Set hash fields for origin and public urls
+    // Set hash fields for name, origin url, public url and persistance
+    const nameSetResponse: Redis.BooleanResponse = await this._ds.hset(`${TUNNEL_LIST_KEY}_${config.id}`, NAME_FIELD, config.name);
+
+    if (!nameSetResponse) {
+      throw new Error('addRoute: Failed to add name field');
+    }
+
     const originURLSetResponse: Redis.BooleanResponse = await this._ds.hset(`${TUNNEL_LIST_KEY}_${config.id}`, ORIGIN_URL_FIELD, config.originURL);
 
     if (!originURLSetResponse) {
@@ -82,6 +101,12 @@ export default class Router {
     
     if (!publicURLSetResponse) {
       throw new Error('addRoute: Failed to add public url field');
+    }
+
+    const persistResponse: Redis.BooleanResponse = await this._ds.hset(`${TUNNEL_LIST_KEY}_${config.id}`, PERSIST_FIELD, config.persist ? `${config.persist}` : 'false');
+
+    if (!persistResponse) {
+      throw new Error('addRoute: Failed to add persist field');
     }
 
     // Add id to set of known tunnels
@@ -115,8 +140,10 @@ export default class Router {
     }
   }
 
-  public async destroy (): Promise<void> {
-    await this._cleanup();
+  public async destroy (empty = false): Promise<void> {
+    if (empty) {
+      await this._cleanup();
+    }
     await this._ds.quit();
   }
 }
