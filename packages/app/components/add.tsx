@@ -6,8 +6,8 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Alert from 'react-bootstrap/Alert';
 import { 
-  TunnelRouteConfigurationRequest,
-} from 'core';
+  TunnelRouteConfigurationRequest
+} from 'core/lib/constants';
 
 import {
   GrPlay
@@ -16,6 +16,7 @@ import {
 type AddRouteFormState = {
   name?: string,
   originURL?: string,
+  persist?: boolean,
   activatedTunnelId?: string | null,
   showAlert?: boolean,
   success?: boolean,
@@ -25,7 +26,7 @@ type AddRouteFormState = {
   expiringTimeoutId?: NodeJS.Timeout | null
 }
 
-type AddRouteProps = Record<string, unknown>;
+type AddRouteProps = Record<string, unknown>
 
 type AddRouteResponseData = {
   tunnelId: string
@@ -43,6 +44,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     this.state = {
       name: '',
       originURL: '',
+      persist: false,
       activatedTunnelId: null,
       success: false,
       errorMessage: null,
@@ -77,6 +79,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
   private async _create (e: React.FormEvent<HTMLFormElement>): Promise<void> {
     const name: string = this.state.name || '';
     const originURL: string = this.state.originURL || 'localhost:8080';
+    const persist: boolean = this.state.persist || false;
 
     e.preventDefault();
     
@@ -106,10 +109,11 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
 
     const config: TunnelRouteConfigurationRequest = Object.freeze({
       name,
-      originURL
+      originURL,
+      persist
     });
 
-    let res: any;
+    let res;
     
     try {
       res = await fetch('/api/tunnels', {
@@ -127,7 +131,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     const alertOffTimeout: NodeJS.Timeout = setTimeout(() => {
       this._resetAlert();
       mutate('/api/tunnels');
-    }, 25000); // expire after 25 seconds
+    }, 10000); // expire after 10 seconds
 
     if (!res.ok) {
       let data: ErrorResponseData;
@@ -159,6 +163,7 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     this.setState({
       name: '',
       originURL: '',
+      persist: false,
       activatedTunnelId,
       success: res.ok,
       showAlert: true,
@@ -174,6 +179,12 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
     this.setState({
       success: false,
       showAlert: false,
+    });
+  }
+
+  private _togglePersist (): void {
+    this.setState({
+      persist: !this.state.persist
     });
   }
 
@@ -197,13 +208,26 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
           </Form.Row> ) : null 
         }
         <Form.Row>
-          <Form.Group as={Col} xs={5} controlId="validationName">
+          <Form.Group as={Col} xs={4} controlId="validationName">
             <Form.Control required type="text" value={this.state.name} onChange={this._handleUpdate('name')} size="lg" placeholder="Name (ex: my-random-webserver)" />
             <Form.Control.Feedback type="invalid">Invalid format. Name must be at least 3 letters and only may contain dashes</Form.Control.Feedback>
           </Form.Group>
-          <Form.Group as={Col} xs={5} controlId="validationOriginURL">
+          <Form.Group as={Col} xs={4} controlId="validationOriginURL">
             <Form.Control required type="text" value={this.state.originURL} onChange={this._handleUpdate('originURL')} size="lg" placeholder="Origin (ex: localhost:8080)" />
             <Form.Control.Feedback type="invalid">Invalid format. Origin must be in hostname:port pattern</Form.Control.Feedback>
+          </Form.Group>
+          <Form.Group as={Col} xs={2} controlId="persistanceControl">
+            <Form.Check 
+              type="checkbox"
+              label="Expire"
+              disabled={true}
+            />
+            <Form.Check 
+              type="checkbox"
+              label="Persist Reboot"
+              checked={this.state.persist}
+              onChange={this._togglePersist.bind(this)}
+            />
           </Form.Group>
           <Col>
             <Button variant="outline-dark" size="lg" type="submit" disabled={this.state.disabled} block>

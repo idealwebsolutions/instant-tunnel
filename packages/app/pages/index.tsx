@@ -20,7 +20,7 @@ import {
   GrDocumentMissing
 } from 'react-icons/gr'; 
 import styles from '../styles/Dashboard.module.css'
-import { TunnelRouteConfiguration } from 'core';
+import { constants } from 'core';
 
 type EmptyProps = Record<string, unknown>;
 
@@ -50,9 +50,9 @@ function RouteSettingsPane (): React.FunctionComponentElement<EmptyProps> {
 
   if (error) {
     return (
-      <Jumbotron className="text-center py-1">
+      <Jumbotron className="text-center">
         <GrAlert size="3em" />
-        <h1 className="text-center">Error occured fetching live routes. Please refresh page to try again.</h1>
+        <h1 className="text-center">Error occured fetching routes. Please refresh page to try again.</h1>
       </Jumbotron>
     );
   }
@@ -65,7 +65,7 @@ function RouteSettingsPane (): React.FunctionComponentElement<EmptyProps> {
     );
   }
 
-  const routes: Array<TunnelRouteConfiguration> = data.routes;
+  const routes: Array<constants.TunnelRouteEntry> = data.routes;
   
   return (
     <Col className="py-1">
@@ -80,22 +80,23 @@ function RouteSettingsPane (): React.FunctionComponentElement<EmptyProps> {
           (
             <Jumbotron className="text-center">
               <GrDocumentMissing size="3em" />
-              <h1>No live routes were found.</h1>
+              <h1>No routes were found.</h1>
             </Jumbotron>
           ) : 
           (
-            <Table hover striped responsive>
+            <Table hover striped bordered responsive>
               <thead>
                 <tr>
                   <th>Name</th>
                   <th>Origin</th>
                   <th>Public URL</th>
                   <th>Actions</th>
+                  <th>Persistance</th>
                 </tr>
               </thead>
               <tbody>
-                {routes.map((route: TunnelRouteConfiguration) => 
-                  <LiveRouteEntry key={route.id} route={route} />
+                {routes.map((route: constants.TunnelRouteEntry) => 
+                  <LiveRouteEntry key={route.config.id} route={route} />
                 )}
               </tbody>
             </Table>

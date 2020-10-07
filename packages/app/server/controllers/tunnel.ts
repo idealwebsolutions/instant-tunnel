@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { 
-  TunnelStore, 
-  TunnelRouteConfiguration,
-  TunnelRouteConfigurationRequest
+import {
+  store,
+  constants
 } from 'core';
 
 type ErrorResponse = {
@@ -10,7 +9,7 @@ type ErrorResponse = {
 }
 
 type ActiveRoutesResponse = {
-  routes: Array<TunnelRouteConfiguration>
+  routes: Array<constants.TunnelRouteEntry>
 }
 
 type TunnelIdResponse = {
@@ -18,30 +17,46 @@ type TunnelIdResponse = {
 }
 
 export default class TunnelController {
-  private _store: TunnelStore;
+  private _store: store.TunnelStore;
 
-  constructor (store: TunnelStore) {
+  constructor (store: store.TunnelStore) {
     this._store = store;
   }
 
-  public async fetch (req: Request, res: Response<ActiveRoutesResponse | ErrorResponse>): Promise<void> {
-    let routes: Array<TunnelRouteConfiguration>;
+  public async fetch (_req: Request, res: Response<ActiveRoutesResponse | ErrorResponse>): Promise<void> {
+    let routes: Array<constants.TunnelRouteEntry>;
+
     try {
-      routes = await this._store.getRecords();
+      routes = await this._store.getTunnels();
     } catch (err) {
       res.status(500).json({
         error: err.message
       });
       return;
     }
+
     res.status(200).json({
       routes 
     });
   }
 
-  public async kill (req: Request, res: Response<void | ErrorResponse>): Promise<void> {
+  // Changes state to restart
+  public async restart (req: Request, res: Response<void | ErrorResponse>): Promise<void> {
     try {
-      await this._store.shutdownTunnel(req.params.id);
+      await this._store.reinstantiate(req.params.id, req.query.persist === 'true');
+    } catch (err) {
+      res.status(500).json({
+        error: err.message
+      });
+      return;
+    }
+    res.status(204).end();
+  }
+
+  // Shuts down and removes a single tunnel if necessary
+  public async stop (req: Request, res: Response<void | ErrorResponse>): Promise<void> {
+    try {
+      await this._store.shutdownTunnel(req.params.id, req.query.remove === 'true');
     } catch (err) {
       res.status(500).json({
         error: err.message
@@ -51,6 +66,7 @@ export default class TunnelController {
     res.status(204).end();
   }
   
+  // Creates a new tunnel
   public async create (req: Request, res: Response<TunnelIdResponse | ErrorResponse>): Promise<void> {
     if (!req.body) {
       res.status(400).json({
@@ -58,8 +74,10 @@ export default class TunnelController {
       });
       return;
     }
-    const tunnelConfigRequest: TunnelRouteConfigurationRequest = req.body;
+    
+    const tunnelConfigRequest: constants.TunnelRouteConfigurationRequest = req.body;
     let tunnelId: string;
+
     try {
       tunnelId = await this._store.createTunnel(tunnelConfigRequest);
     } catch (err) {
@@ -68,6 +86,7 @@ export default class TunnelController {
       });
       return;
     }
+    
     res.status(200).json({
       tunnelId
     });
