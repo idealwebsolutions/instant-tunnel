@@ -1,5 +1,5 @@
 # instant-tunnel
-![Screenshot](https://user-images.githubusercontent.com/24352255/94501987-9cd74880-01f2-11eb-9922-ff64ee39d159.png)
+![Screenshot](https://user-images.githubusercontent.com/24352255/95298441-9dfc1b80-086b-11eb-8667-34afc3d398b5.png)
 
 ## Pre-requisites
 `cloudflared` must be in `PATH` or defined as an env variable `CLOUDFLARED_PATH` prior to usage. Download [here](https://developers.cloudflare.com/argo-tunnel/downloads).
