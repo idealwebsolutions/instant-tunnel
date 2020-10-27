@@ -1,4 +1,5 @@
 # instant-tunnel
+Self-hosted infrustructure as a service for testing/development purposes
 ![Screenshot](https://user-images.githubusercontent.com/24352255/95298441-9dfc1b80-086b-11eb-8667-34afc3d398b5.png)
 
 ## Pre-requisites
@@ -21,9 +22,9 @@ Two choices, recommended `Dockerfile` is ready to use (don't forget to include r
 
 ## Motives
 There's several upsides to using Cloudflare Argo ([see here](https://www.cloudflare.com/products/argo-smart-routing/)) but here are my own:
-- Wanted to utilize old/unused devices sitting around and spend less on hosting services.
-- Would like to build a platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
-- Would like to expand to creating a FaaS platform similar to AWS using [OpenFaaS](https://github.com/openfaas/faas) in the near future.
+- Wanted to utilize old/unused devices sitting around and spend less on external hosting services. Free tier limits mostly suck.
+- Build your own platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
+- Host a FaaS platform similar to AWS or Azure using [OpenFaaS](https://github.com/openfaas/faas) by routing Cloudflare Argo to your own serverless farm. Checkout demo link to see OpenFaaS in use.
 
 ## TODO
 App could use some improvements visually, will work on it incrementally as necessary to polish. Suggestions are welcome. 
