@@ -16,13 +16,8 @@ export abstract class Task extends EventEmitter {
     super();
   }
 
-  public start (): void {
-    throw new Error('start: Method not implemented');
-  }
-
-  public stop (): void {
-    throw new Error('stop: Method not implemented');
-  }
+  public abstract start (): void;
+  public abstract stop (): void;
 }
 // Discrete task for handling a scheduled expiration
 export class ScheduledCancellationTask extends Task {
