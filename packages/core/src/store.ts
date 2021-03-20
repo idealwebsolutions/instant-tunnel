@@ -204,18 +204,18 @@ export class TunnelStore extends EventEmitter {
   // Shuts down a single tunnel instance
   public async shutdownTunnel (tunnelId: TunnelRouteIdentifier, forget = false): Promise<void> {
     if (this._liveTunnels.has(tunnelId)) {
-      // Permanently removes record on request
-      if (forget) {
-        await this._router.removeRoute(tunnelId);
-      } else { // Removes the now defunct proxy associated with route
-        await this._router.disableRoute(tunnelId);
-      }
+      // Removes the now defunct proxy associated with route
+      await this._router.disableRoute(tunnelId);
       // Fetch associated tunnel
       const liveTunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
       // Check correct instance lives
       if (liveTunnel && liveTunnel instanceof Tunnel) {
         liveTunnel.destroy();
       }
+    }
+    // Permanently removes record on request
+    if (forget) {
+      await this._router.removeRoute(tunnelId);
     }
   }
   // Returns single tunnel route configuration include state
