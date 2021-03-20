@@ -10,7 +10,8 @@ import {
 } from 'core/lib/constants';
 
 import {
-  GrPlay
+  GrPlay,
+  GrRefresh
 } from 'react-icons/gr';
 
 type AddRouteFormState = {
@@ -229,6 +230,14 @@ export default class AddRouteForm extends React.Component<AddRouteProps, AddRout
               onChange={this._togglePersist.bind(this)}
             />
           </Form.Group>
+          <Col>
+            <Button variant="outline-dark" size="lg" onClick={(event) => {
+              event.preventDefault();
+              mutate('/api/tunnels');
+            }} block>
+              <GrRefresh />
+            </Button>
+          </Col>
           <Col>
             <Button variant="outline-dark" size="lg" type="submit" disabled={this.state.disabled} block>
               <GrPlay />
