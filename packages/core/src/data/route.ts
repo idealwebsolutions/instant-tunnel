@@ -71,9 +71,4 @@ export class Route {
   public async remove (tunnelId: TunnelRouteIdentifier): Promise<void> {
     await this._db.del<SavedRouteConfiguration>().from(ROUTES_TABLE_NAME).where('tunnel', tunnelId);
   }
-  // Cleans non-active routes from routing table
-  public async clean (): Promise<void> {
-    await this._db.del<SavedRouteConfiguration>().from(ROUTES_TABLE_NAME)
-      .whereNull('tunnel').orWhereNull('proxy').andWhere('persist', false);
-  }
 }

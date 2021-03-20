@@ -58,16 +58,6 @@ export default class Router {
     }
   }
 
-  // Removes all stale routes (non-persistent)
-  public async removeStaleRoutes (): Promise<void> {
-    try {
-      await Route.clean();
-    } catch (err) {
-      console.error(err);
-      throw new Error('removeStaleRoutes: Unable to clean remove stale routes');
-    }
-  }
-
   // Destroys router and can optionally cleanup (remove all) routes
   public async destroy (empty = false): Promise<void> {
     if (empty) {

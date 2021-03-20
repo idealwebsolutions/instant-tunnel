@@ -153,8 +153,6 @@ export class TunnelStore extends EventEmitter {
   }
   // Resets by reviving instances if persisted option is enabled
   public async reset (): Promise<void> {
-    // Remove any stale instances found
-    await this._router.removeStaleRoutes();
     // Fetch persistent tunnels
     const tunnels: Array<TunnelRouteEntry> = await this.getTunnels();
     // Iterate over each tunnel that is disabled with persistance enabled
