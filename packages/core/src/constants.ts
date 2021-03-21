@@ -1,5 +1,3 @@
-const NAMESPACE: string = process.env.NAMESPACE || 'instant-tunnel';
-
 export type URL = string;
 export type TunnelRouteIdentifier = string;
 export interface TunnelStorePreferences {
@@ -19,6 +17,13 @@ export interface TunnelRouteConfigurationRequest {
   readonly originURL: URL,
   readonly expiration?: number,
   readonly persist?: boolean
+}
+export interface SavedRouteConfiguration {
+  readonly tunnel: TunnelRouteIdentifier,
+  readonly name: string,
+  readonly origin: URL,
+  readonly proxy: URL,
+  readonly persist: boolean
 }
 export enum TunnelState {
   PENDING = 0,
@@ -54,11 +59,8 @@ export const DATA_EVENT = 'data';
 export const CLOUDFLARED_PATH: string = process.env.CLOUDFLARED_PATH || 'cloudflared';
 export const TEMPORARY_CLOUDFLARE_URL = /(https:\/\/.+\.trycloudflare\.com)/;
 export const VALID_TUNNEL_NAME = /^[A-Za-z-]{2,32}[A-Za-z]$/;
-export const TUNNEL_LIST_KEY = `${NAMESPACE}:tunnels`;
-export const NAME_FIELD = 'name';
-export const ORIGIN_URL_FIELD = 'origin_url';
-export const PUBLIC_URL_FIELD = 'public_url';
-export const PERSIST_FIELD = 'persist';
+export const ROUTES_TABLE_NAME = 'routes';
+export const MAX_ROUTE_NAME_LENGTH = 32;
 export const DEFAULT_STORE_PREFERENCES = Object.freeze({
   disableTimeoutCheck: false,
   timeoutIntervalPreference: 30000 // change default timeout to 30 seconds

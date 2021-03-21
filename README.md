@@ -3,7 +3,7 @@
 
 ## Pre-requisites
 `cloudflared` must be in `PATH` or defined as an env variable `CLOUDFLARED_PATH` prior to usage. Download [here](https://developers.cloudflare.com/argo-tunnel/downloads).
-Uses whatever redis server is running locally, if not define `REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD` with the appropriate values.
+Uses whatever postgresql server is running locally depending on `process.env.NODE_ENV`, if not define `DATABASE_HOST`, `DATABASE_USER` and `DATABASE_PASSWORD` with the appropriate values.
 
 ## Build
 To bootstrap
@@ -14,10 +14,21 @@ To build all packages
 
     npm run build-all
 
+## Migrations
+To run migrations in production, first move to core package: `cd packages/core`
+
+    npm run migrate:latest --env production
+
+To rollback changes
+
+    npm run migrate:rollback --env production
+
 ## Deployment
 Two choices, recommended `Dockerfile` is ready to use (don't forget to include redis configuration). Otherwise try the following in (`/packages/app`):
 
     npm run start
+
+If using docker, it's recommended to store any sensitive environment values in [docker secrets](https://docs.docker.com/engine/swarm/secrets/).
 
 ## Motives
 There's several upsides to using Cloudflare Argo ([see here](https://www.cloudflare.com/products/argo-smart-routing/)) but here are my own:

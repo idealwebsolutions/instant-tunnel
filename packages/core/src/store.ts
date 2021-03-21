@@ -151,11 +151,13 @@ export class TunnelStore extends EventEmitter {
       await this.createTunnel(newTunnelRequest);
     }
   }
-  // Revives shutdown instances if persisted option is enabled
-  public async reinstantiateAll (): Promise<void> {
+  // Resets by reviving instances if persisted option is enabled
+  public async reset (): Promise<void> {
+    // Fetch persistent tunnels
     const tunnels: Array<TunnelRouteEntry> = await this.getTunnels();
     // Iterate over each tunnel that is disabled with persistance enabled
-    tunnels.forEach(async (tunnelEntry: TunnelRouteEntry) => {
+    let tunnelEntry: TunnelRouteEntry;
+    for (tunnelEntry of tunnels) {
       if (tunnelEntry.state === TunnelState.DISABLED && tunnelEntry.config.persist) {
         const oldTunnelId: TunnelRouteIdentifier = tunnelEntry.config.id;
         // Remove old route with associated id
@@ -167,9 +169,10 @@ export class TunnelStore extends EventEmitter {
           expiration: tunnelEntry.config.expiration,
           persist: tunnelEntry.config.persist
         });
+        // Create new tunnel
         await this.createTunnel(newTunnelRequest);
       }
-    });
+    }
   }
   // Creates a new tunnel instance
   public async createTunnel (request: TunnelRouteConfigurationRequest): Promise<TunnelRouteIdentifier> {
@@ -201,16 +204,18 @@ export class TunnelStore extends EventEmitter {
   // Shuts down a single tunnel instance
   public async shutdownTunnel (tunnelId: TunnelRouteIdentifier, forget = false): Promise<void> {
     if (this._liveTunnels.has(tunnelId)) {
-      // Permanently removes record on request
-      if (forget) {
-        await this._router.removeRoute(tunnelId);
-      }
+      // Removes the now defunct proxy associated with route
+      await this._router.disableRoute(tunnelId);
       // Fetch associated tunnel
       const liveTunnel: Tunnel | undefined = this._liveTunnels.get(tunnelId);
       // Check correct instance lives
       if (liveTunnel && liveTunnel instanceof Tunnel) {
         liveTunnel.destroy();
       }
+    }
+    // Permanently removes record on request
+    if (forget) {
+      await this._router.removeRoute(tunnelId);
     }
   }
   // Returns single tunnel route configuration include state
@@ -264,6 +269,6 @@ export class TunnelStore extends EventEmitter {
 
 export function createStore (storePrefs: TunnelStorePreferences = DEFAULT_STORE_PREFERENCES): TunnelStore {
   const store = new TunnelStore(storePrefs);
-  setTimeout(async () => await store.reinstantiateAll(), 100);
+  setTimeout(async () => await store.reset(), 100);
   return store;
 }

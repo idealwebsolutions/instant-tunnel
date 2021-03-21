@@ -10,7 +10,7 @@ import {
   TIMEOUT_EVENT,
   EXPIRED_EVENT
 } from './constants';
-// Simple interface for defining tasks
+// Simple interface for defining background tasks
 export abstract class Task extends EventEmitter {
   constructor () {
     super();

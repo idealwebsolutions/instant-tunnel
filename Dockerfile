@@ -18,6 +18,8 @@ COPY . /opt/instant-tunnel
 
 WORKDIR /opt/instant-tunnel
 
+RUN apk update; apk add python2 make g++
+
 RUN npm install
 RUN npm run bootstrap
 RUN npm run build-all
