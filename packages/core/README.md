@@ -3,7 +3,7 @@ Utilities to build and manage cloudflared argo tunnels
 
 ## Pre-requisites
 `cloudflared` must be in `PATH` or defined as an env variable `CLOUDFLARED_PATH` prior to usage. Download [here](https://developers.cloudflare.com/argo-tunnel/downloads).
-Uses whatever redis server is running locally, if not define `REDIS_HOST`, `REDIS_PORT` and `REDIS_PASSWORD` with the appropriate values.
+Uses whatever postgresql server is running locally depending on `process.env.NODE_ENV`, if not define `DATABASE_HOST`, `DATABASE_USER` and `DATABASE_PASSWORD` with the appropriate values.
 
 ## Usage
 
