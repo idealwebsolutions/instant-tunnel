@@ -24,16 +24,16 @@ To rollback changes
     npm run migrate:rollback --env production
 
 ## Deployment
-Two choices, recommended `Dockerfile` is ready to use (don't forget to include redis configuration). Otherwise try the following in (`/packages/app`):
+Two choices, recommended `Dockerfile` is ready to use (don't forget to include postgresql configuration). Otherwise try the following in (`/packages/app`):
 
     npm run start
 
 If using docker, it's recommended to store any sensitive environment values in [docker secrets](https://docs.docker.com/engine/swarm/secrets/).
 
 ## Motives
-There's several upsides to using Cloudflare Argo ([see here](https://www.cloudflare.com/products/argo-smart-routing/)) but here are my own:
+There's several use cases to using Cloudflare Argo's Free Plan ([see here](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/trycloudflare#faq)) but here are my own:
 - Wanted to utilize old/unused devices sitting around and spend less on external hosting services. Free tier limits mostly suck.
-- Build your own platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
+- Build your own testing platform with similar functionality to Heroku or Google App Engine, except self-hosted and completely free.
 - Host a FaaS platform similar to AWS or Azure using [OpenFaaS](https://github.com/openfaas/faas) by routing Cloudflare Argo to your own serverless farm. Checkout demo link to see OpenFaaS in use.
 
 ## TODO
