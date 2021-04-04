@@ -22,8 +22,7 @@ const knexEnvConfig: KnexEnvConfig = {
       password: process.env.DATABASE_PASSWORD
     },
     pool: {
-      min: 2,
-      max: 10
+      min: 0,
     },
     migrations: {
       tableName: "knex_migrations",
@@ -39,8 +38,7 @@ const knexEnvConfig: KnexEnvConfig = {
       password: process.env.DATABASE_PASSWORD
     },
     pool: {
-      min: 2,
-      max: 10
+      min: 0,
     },
     migrations: {
       tableName: "knex_migrations",
