@@ -1,4 +1,6 @@
 # instant-tunnel
+Deploy apps using your own testing/development environment without the need for an external host
+
 ![Screenshot](https://user-images.githubusercontent.com/24352255/95298441-9dfc1b80-086b-11eb-8667-34afc3d398b5.png)
 
 ## Pre-requisites
