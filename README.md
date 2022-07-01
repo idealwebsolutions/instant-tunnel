@@ -3,6 +3,9 @@ Deploy apps using your own testing/development environment without the need for 
 
 ![Screenshot](https://user-images.githubusercontent.com/24352255/95298441-9dfc1b80-086b-11eb-8667-34afc3d398b5.png)
 
+## Status
+DEPRECATED - Cloudflare provides their own way of managing tunnels using a GUI, which you may find more useful. You can find that [here](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/tunnel-guide/#set-up-a-tunnel-remotely-dashboard-setup).
+
 ## Pre-requisites
 `cloudflared` must be in `PATH` or defined as an env variable `CLOUDFLARED_PATH` prior to usage. Download [here](https://developers.cloudflare.com/argo-tunnel/downloads).
 Uses whatever postgresql server is running locally depending on `process.env.NODE_ENV`, if not define `DATABASE_HOST`, `DATABASE_USER` and `DATABASE_PASSWORD` with the appropriate values.
